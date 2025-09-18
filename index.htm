@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fire - Battle Royale</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 10px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 10px 0;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff7e5f;
+        }
+        
+        #game-canvas {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect fill="%23111" width="400" height="400"/><path fill="%23161b33" d="M0 0L400 400M400 0L0 400" stroke-width="0.5"/></svg>');
+            border: 3px solid #ff7e5f;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 0 10px;
+        }
+        
+        .movement-controls, .action-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            width: 48%;
+        }
+        
+        .control-btn {
+            background: rgba(255, 126, 95, 0.8);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            height: 60px;
+            width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.9);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .shoot-btn {
+            background: linear-gradient(to bottom, #ff7e5f, #e64c3c);
+            grid-column: 2;
+            grid-row: 2 / 4;
+            height: 80px;
+            width: 80px;
+            font-size: 2rem;
+            justify-self: center;
+        }
+        
+        .ads-container {
+            margin: 20px auto;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            text-align: center;
+            max-width: 728px;
+        }
+        
+        .ad-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .ad-placeholder {
+            background: rgba(0, 0, 0, 0.2);
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            margin: 0 auto;
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                max-width: 768px;
+                margin: 0 auto;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .ad-placeholder {
+                height: 180px;
+            }
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            width: 80%;
+            max-width: 400px;
+        }
+        
+        .game-over h2 {
+            color: #ff7e5f;
+            margin-bottom: 20px;
+        }
+        
+        .restart-btn {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FREE FIRE BATTLE</h1>
+        </header>
+        
+        <div class="game-stats">
+            <div class="stat">
+                <div>HEALTH</div>
+                <div class="stat-value" id="health">100</div>
+            </div>
+            <div class="stat">
+                <div>KILLS</div>
+                <div class="stat-value" id="kills">0</div>
+            </div>
+            <div class="stat">
+                <div>AMMO</div>
+                <div class="stat-value" id="ammo">30</div>
+            </div>
+        </div>
+        
+        <div class="ads-container">
+            <div class="ad-label">Advertisement</div>
+            <div class="ad-placeholder" id="ad-unit">
+                <!-- AdSense Ad Unit -->
+                <!-- Replace with your AdSense code -->
+                <p>AdSense Ad Unit</p>
+            </div>
+        </div>
+        
+        <canvas id="game-canvas" width="800" height="450"></canvas>
+        
+        <div class="ads-container">
+            <div class="ad-label">Advertisement</div>
+            <div class="ad-placeholder" id="ad-unit-2">
+                <!-- AdSense Ad Unit -->
+                <!-- Replace with your AdSense code -->
+                <p>AdSense Ad Unit</p>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="movement-controls">
+                <div class="control-btn" id="up">↑</div>
+                <div class="control-btn" id="left">←</div>
+                <div class="control-btn" id="right">→</div>
+                <div class="control-btn" id="down">↓</div>
+            </div>
+            
+            <div class="action-controls">
+                <div class="control-btn" id="reload">↻</div>
+                <div class="control-btn shoot-btn" id="shoot">🔥</div>
+                <div class="control-btn" id="jump">↟</div>
+            </div>
+        </div>
+        
+        <div class="game-over" id="game-over">
+            <h2>GAME OVER</h2>
+            <p>Your Score: <span id="final-score">0</span></p>
+            <p>Kills: <span id="final-kills">0</span></p>
+            <button class="restart-btn" id="restart">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const healthDisplay = document.getElementById('health');
+        const killsDisplay = document.getElementById('kills');
+        const ammoDisplay = document.getElementById('ammo');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScore = document.getElementById('final-score');
+        const finalKills = document.getElementById('final-kills');
+        const restartBtn = document.getElementById('restart');
+        
+        // Adjust canvas size for mobile
+        function resizeCanvas() {
+            if (window.innerWidth < 768) {
+                canvas.width = window.innerWidth - 40;
+                canvas.height = canvas.width * 0.6;
+            } else {
+                canvas.width = 800;
+                canvas.height = 450;
+            }
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Player object
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            width: 40,
+            height: 40,
+            speed: 5,
+            health: 100,
+            ammo: 30,
+            kills: 0,
+            color: '#ff7e5f',
+            direction: 0, // 0: right, 1: left
+            
+            draw: function() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
+                
+                // Draw player details
+                ctx.fillStyle = '#333';
+                ctx.fillRect(this.x - 15, this.y - 25, 30, 5);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(this.x - 15, this.y - 25, 30 * (this.health/100), 5);
+                
+                // Draw gun
+                ctx.fillStyle = '#333';
+                if (this.direction === 0) {
+                    ctx.fillRect(this.x + this.width/2, this.y - 5, 20, 10);
+                } else {
+                    ctx.fillRect(this.x - this.width/2 - 20, this.y - 5, 20, 10);
+                }
+            },
+            
+            move: function(direction) {
+                if (direction === 'left' && this.x > this.width/2) {
+                    this.x -= this.speed;
+                    this.direction = 1;
+                }
+                if (direction === 'right' && this.x < canvas.width - this.width/2) {
+                    this.x += this.speed;
+                    this.direction = 0;
+                }
+                if (direction === 'up' && this.y > this.height/2) {
+                    this.y -= this.speed;
+                }
+                if (direction === 'down' && this.y < canvas.height - this.height/2) {
+                    this.y += this.speed;
+                }
+            },
+            
+            shoot: function() {
+                if (this.ammo > 0) {
+                    this.ammo--;
+                    ammoDisplay.textContent = this.ammo;
+                    
+                    bullets.push({
+                        x: this.direction === 0 ? this.x + this.width/2 + 20 : this.x - this.width/2 - 20,
+                        y: this.y,
+                        width: 10,
+                        height: 5,
+                        speed: 10,
+                        direction: this.direction,
+                        color: '#ffcc00'
+                    });
+                    
+                    // Add shooting effect
+                    for (let i = 0; i < 5; i++) {
+                        particles.push({
+                            x: this.direction === 0 ? this.x + this.width/2 + 20 : this.x - this.width/2 - 20,
+                            y: this.y,
+                            radius: Math.random() * 3 + 1,
+                            color: '#ffcc00',
+                            speed: Math.random() * 5 + 2,
+                            life: 20
+                        });
+                    }
+                }
+            },
+            
+            reload: function() {
+                this.ammo = 30;
+                ammoDisplay.textContent = this.ammo;
+            }
+        };
+        
+        // Game objects
+        let enemies = [];
+        let bullets = [];
+        let particles = [];
+        let enemySpawnRate = 60;
+        let enemyCount = 0;
+        let gameRunning = true;
+        
+        // Enemy class
+        class Enemy {
+            constructor() {
+                this.width = 30;
+                this.height = 30;
+                this.x = Math.random() * (canvas.width - this.width) + this.width/2;
+                this.y = -this.height;
+                this.speed = Math.random() * 2 + 1;
+                this.health = 100;
+                this.color = '#e64c3c';
+            }
+            
+            update() {
+                this.y += this.speed;
+                
+                // Check collision with player
+                if (
+                    Math.abs(this.x - player.x) < (this.width + player.width)/2 &&
+                    Math.abs(this.y - player.y) < (this.height + player.height)/2
+                ) {
+                    player.health -= 5;
+                    healthDisplay.textContent = player.health;
+                    this.health = 0;
+                    
+                    if (player.health <= 0) {
+                        endGame();
+                    }
+                }
+                
+                // Remove if out of screen
+                if (this.y > canvas.height + this.height) {
+                    this.health = 0;
+                }
+            }
+            
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
+                
+                // Draw health bar
+                ctx.fillStyle = '#333';
+                ctx.fillRect(this.x - 15, this.y - 25, 30, 5);
+                ctx.fillStyle = '#4caf50';
+                ctx.fillRect(this.x - 15, this.y - 25, 30 * (this.health/100), 5);
+            }
+        }
+        
+        // Game functions
+        function spawnEnemy() {
+            if (enemyCount % enemySpawnRate === 0) {
+                enemies.push(new Enemy());
+            }
+            enemyCount++;
+        }
+        
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                
+                if (bullet.direction === 0) {
+                    bullet.x += bullet.speed;
+                } else {
+                    bullet.x -= bullet.speed;
+                }
+                
+                // Remove if out of screen
+                if (bullet.x < 0 || bullet.x > canvas.width) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Check collision with enemies
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    
+                    if (
+                        Math.abs(bullet.x - enemy.x) < (bullet.width + enemy.width)/2 &&
+                        Math.abs(bullet.y - enemy.y) < (bullet.height + enemy.height)/2
+                    ) {
+                        enemy.health -= 34;
+                        
+                        // Add hit effect
+                        for (let k = 0; k < 10; k++) {
+                            particles.push({
+                                x: enemy.x,
+                                y: enemy.y,
+                                radius: Math.random() * 3 + 1,
+                                color: '#e64c3c',
+                                speed: Math.random() * 3 + 1,
+                                life: 30
+                            });
+                        }
+                        
+                        bullets.splice(i, 1);
+                        
+                        if (enemy.health <= 0) {
+                            player.kills++;
+                            killsDisplay.textContent = player.kills;
+                            
+                            // Add explosion effect
+                            for (let k = 0; k < 20; k++) {
+                                particles.push({
+                                    x: enemy.x,
+                                    y: enemy.y,
+                                    radius: Math.random() * 5 + 2,
+                                    color: '#ff7e5f',
+                                    speed: Math.random() * 5 + 2,
+                                    life: 40
+                                });
+                            }
+                            
+                            enemies.splice(j, 1);
+                        }
+                        
+                        break;
+                    }
+                }
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += (Math.random() - 0.5) * p.speed;
+                p.y += (Math.random() - 0.5) * p.speed;
+                p.life--;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawParticles() {
+            for (const p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            }
+        }
+        
+        function endGame() {
+            gameRunning = false;
+            finalScore.textContent = player.kills * 100;
+            finalKills.textContent = player.kills;
+            gameOverScreen.style.display = 'block';
+        }
+        
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Spawn enemies
+            spawnEnemy();
+            
+            // Update and draw enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].update();
+                enemies[i].draw();
+                
+                // Remove dead enemies
+                if (enemies[i].health <= 0) {
+                    enemies.splice(i, 1);
+                }
+            }
+            
+            // Update and draw bullets
+            updateBullets();
+            for (const bullet of bullets) {
+                ctx.fillStyle = bullet.color;
+                ctx.fillRect(bullet.x - bullet.width/2, bullet.y - bullet.height/2, bullet.width, bullet.height);
+            }
+            
+            // Update and draw particles
+            updateParticles();
+            drawParticles();
+            
+            // Draw player
+            player.draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Controls
+        const keys = {};
+        
+        window.addEventListener('keydown', function(e) {
+            keys[e.key] = true;
+        });
+        
+        window.addEventListener('keyup', function(e) {
+            keys[e.key] = false;
+        });
+        
+        function handleKeyControls() {
+            if (keys['ArrowLeft'] || keys['a']) player.move('left');
+            if (keys['ArrowRight'] || keys['d']) player.move('right');
+            if (keys['ArrowUp'] || keys['w']) player.move('up');
+            if (keys['ArrowDown'] || keys['s']) player.move('down');
+            if (keys[' ']) player.shoot();
+            if (keys['r']) player.reload();
+        }
+        
+        // Touch controls
+        document.getElementById('left').addEventListener('touchstart', function() {
+            keys['ArrowLeft'] = true;
+        });
+        
+        document.getElementById('left').addEventListener('touchend', function() {
+            keys['ArrowLeft'] = false;
+        });
+        
+        document.getElementById('right').addEventListener('touchstart', function() {
+            keys['ArrowRight'] = true;
+        });
+        
+        document.getElementById('right').addEventListener('touchend', function() {
+            keys['ArrowRight'] = false;
+        });
+        
+        document.getElementById('up').addEventListener('touchstart', function() {
+            keys['ArrowUp'] = true;
+        });
+        
+        document.getElementById('up').addEventListener('touchend', function() {
+            keys['ArrowUp'] = false;
+        });
+        
+        document.getElementById('down').addEventListener('touchstart', function() {
+            keys['ArrowDown'] = true;
+        });
+        
+        document.getElementById('down').addEventListener('touchend', function() {
+            keys['ArrowDown'] = false;
+        });
+        
+        document.getElementById('shoot').addEventListener('touchstart', function() {
+            player.shoot();
+        });
+        
+        document.getElementById('reload').addEventListener('touchstart', function() {
+            player.reload();
+        });
+        
+        // Restart game
+        restartBtn.addEventListener('click', function() {
+            player.health = 100;
+            player.ammo = 30;
+            player.kills = 0;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 50;
+            
+            healthDisplay.textContent = player.health;
+            killsDisplay.textContent = player.kills;
+            ammoDisplay.textContent = player.ammo;
+            
+            enemies = [];
+            bullets = [];
+            particles = [];
+            enemyCount = 0;
+            
+            gameOverScreen.style.display = 'none';
+            gameRunning = true;
+            gameLoop();
+        });
+        
+        // Main game loop with input handling
+        function mainLoop() {
+            if (gameRunning) {
+                handleKeyControls();
+            }
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Start the game
+        gameLoop();
+        mainLoop();
+    </script>
+</body>
+</html>
